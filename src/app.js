@@ -11,6 +11,31 @@ const cors = require("cors")
 
 const web3 = new Web3(CHAIN_CONFIG.ETH.PROVIDER);
 
+let PRIVATE_KEY = "";
+
+const getPassWord = () => {
+  var readline = require('readline');
+
+  var rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  rl.stdoutMuted = true;
+
+  rl.question('PRIVATE_KEY: ', function (private_key) {
+    PRIVATE_KEY = private_key;
+    rl.close();
+  });
+
+  rl._writeToOutput = function _writeToOutput(stringToWrite) {
+    if (rl.stdoutMuted)
+      rl.output.write("*");
+    else
+      rl.output.write(stringToWrite);
+  };
+}
+
 // init middleware
 app.use(morgan("dev"))
 // morgan("dev") color in status -> Bật khi dev mode
@@ -21,7 +46,6 @@ app.use(morgan("dev"))
 app.use(helmet())
 app.use(compression())
 app.use(cors())
-
 // init db
 // require('./dbs/init.mongodb');
 // const { checkOverload } = require('./helpers/check.connect')
@@ -54,7 +78,7 @@ app.get('/signature', async (req, res, next) => {
     { type: 'uint256', value: data.exchangeRate },
   );
 
-  const { signature } = web3.eth.accounts.sign(dataToSign, process.env.PRIVATE_KEY)
+  const { signature } = web3.eth.accounts.sign(dataToSign, PRIVATE_KEY)
   console.log({
     inforExchangeRare: data,
     signature
@@ -64,11 +88,7 @@ app.get('/signature', async (req, res, next) => {
     inforExchangeRare: data,
     signature
   })
-})
+});
 
+module.exports = {getPassWord, app}
 
-
-// handling error
-
-
-module.exports = app
