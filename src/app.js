@@ -87,13 +87,13 @@ app.get('/signature', async (req, res, next) => {
     console.log({
       inforExchangeRare: data,
       signature,
-      utf8Bytes: utf8Bytes
+      utf8Bytes: uint8ArrayToArray(utf8Bytes)
     });
   
     return res.status(200).json({
       inforExchangeRare: data,
       signature: signature,
-      utf8Bytes: utf8Bytes
+      utf8Bytes: uint8ArrayToArray(utf8Bytes)
     })
   } catch (err) {
     console.log(err);
@@ -102,6 +102,16 @@ app.get('/signature', async (req, res, next) => {
     });
   }
 });
+
+function uint8ArrayToArray(uint8Array) {
+  var array = [];
+
+  for (var i = 0; i < uint8Array.byteLength; i++) {
+      array[i] = uint8Array[i];
+  }
+
+  return array;
+}
 
 module.exports = {getPassWord, app}
 
