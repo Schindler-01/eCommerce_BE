@@ -80,6 +80,9 @@ app.get('/signature', async (req, res, next) => {
     );
   
     const { signature } = web3.eth.accounts.sign(dataToSign, PRIVATE_KEY)
+
+    let y = Web3.utils.asciiToHex(signature)
+
     console.log({
       inforExchangeRare: data,
       signature
@@ -87,7 +90,8 @@ app.get('/signature', async (req, res, next) => {
   
     return res.status(200).json({
       inforExchangeRare: data,
-      signature
+      signature: signature,
+      asciiToHex: y
     })
   } catch (err) {
     console.log(err);
