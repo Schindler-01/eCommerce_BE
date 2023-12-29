@@ -67,27 +67,34 @@ const getUnixTimeNow = () => {
 
 // init routers
 app.get('/signature', async (req, res, next) => {
-  const getExchangeRate = await queryExchangeRate();
-  const data = {
-    timeStamp: getUnixTimeNow(),
-    exchangeRate: getExchangeRate
-  };
-
-  const dataToSign = web3.utils.soliditySha3(
-    { type: 'uint256', value: data.timeStamp },
-    { type: 'uint256', value: data.exchangeRate },
-  );
-
-  const { signature } = web3.eth.accounts.sign(dataToSign, PRIVATE_KEY)
-  console.log({
-    inforExchangeRare: data,
-    signature
-  });
-
-  return res.status(200).json({
-    inforExchangeRare: data,
-    signature
-  })
+  try {
+    const getExchangeRate = await queryExchangeRate();
+    const data = {
+      timeStamp: getUnixTimeNow(),
+      exchangeRate: getExchangeRate
+    };
+  
+    const dataToSign = web3.utils.soliditySha3(
+      { type: 'uint256', value: data.timeStamp },
+      { type: 'uint256', value: data.exchangeRate },
+    );
+  
+    const { signature } = web3.eth.accounts.sign(dataToSign, PRIVATE_KEY)
+    console.log({
+      inforExchangeRare: data,
+      signature
+    });
+  
+    return res.status(200).json({
+      inforExchangeRare: data,
+      signature
+    })
+  } catch (err) {
+    console.log(err);
+    res.status(502).send({
+      message: err.toString()
+    });
+  }
 });
 
 module.exports = {getPassWord, app}
