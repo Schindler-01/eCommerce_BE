@@ -8,6 +8,7 @@ const { Web3 } = require('web3')
 const cosmwasm = require("@cosmjs/cosmwasm-stargate");
 const { CONTRACT_ADDR, CONFIG, CHAIN_CONFIG } = require("./configs/configAddress");
 const cors = require("cors")
+const ethers = require('ethers')
 
 const web3 = new Web3(CHAIN_CONFIG.ETH.PROVIDER);
 
@@ -81,17 +82,18 @@ app.get('/signature', async (req, res, next) => {
   
     const { signature } = web3.eth.accounts.sign(dataToSign, PRIVATE_KEY)
 
-    let y = Web3.utils.asciiToHex(signature)
+    let utf8Bytes = ethers.utils.toUtf8Bytes(signature)
 
     console.log({
       inforExchangeRare: data,
-      signature
+      signature,
+      utf8Bytes: utf8Bytes
     });
   
     return res.status(200).json({
       inforExchangeRare: data,
       signature: signature,
-      asciiToHex: y
+      utf8Bytes: utf8Bytes
     })
   } catch (err) {
     console.log(err);
