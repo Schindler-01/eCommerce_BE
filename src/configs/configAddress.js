@@ -29,5 +29,6 @@ const CHAIN_CONFIG = {
     },
 };
 
+const LIST_RPC_ORAI_CHAIN = ["https://rpc-oraichain.mms.team", "https://oraichain-mainnet-rpc.autostake.com:443", "https://rpc.orai.io", "https://rpc-orai.nodine.id"];
 
-module.exports = { CONTRACT_ADDR, CONFIG, CHAIN_CONFIG };
+module.exports = { CONTRACT_ADDR, CONFIG, CHAIN_CONFIG, LIST_RPC_ORAI_CHAIN };

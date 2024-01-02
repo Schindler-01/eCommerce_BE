@@ -6,15 +6,30 @@ const morgan = require('morgan')
 const app = express()
 const { Web3 } = require('web3')
 const cosmwasm = require("@cosmjs/cosmwasm-stargate");
-const { CONTRACT_ADDR, CONFIG, CHAIN_CONFIG } = require("./configs/configAddress");
+const { CONTRACT_ADDR, CONFIG, CHAIN_CONFIG, LIST_RPC_ORAI_CHAIN } = require("./configs/configAddress");
 const cors = require("cors")
 const ethers = require('ethers')
 
 const web3 = new Web3(CHAIN_CONFIG.ETH.PROVIDER);
 
+app.use(morgan("dev"))
+app.use(helmet())
+app.use(compression())
+app.use(cors())
+
 let PRIVATE_KEY = "";
 
-const getPassWord = () => {
+let clients = [];
+const initApp = async () => {
+  for (let i = 0; i < LIST_RPC_ORAI_CHAIN.length; i++) {
+    try {
+      let client = await cosmwasm.CosmWasmClient.connect(LIST_RPC_ORAI_CHAIN[i]);
+      clients.push(client);
+    } catch (err) {
+      console.log(err.toString());
+    }
+  }
+
   var readline = require('readline');
 
   var rl = readline.createInterface({
@@ -37,28 +52,35 @@ const getPassWord = () => {
   };
 }
 
-// init middleware
-app.use(morgan("dev"))
-// morgan("dev") color in status -> Bật khi dev mode
-// morgan("combined") follow apache standard ->  Khi đưa lên production
-// morgan("common") -> Gần giống combined nhưng k biết chạy bằng curl postman hay ...
-// morgan("short") -> Ngắn hơn không có thời gian
-// morgan("tiny") -> ngắn hơn nữa
-app.use(helmet())
-app.use(compression())
-app.use(cors())
-// init db
-// require('./dbs/init.mongodb');
-// const { checkOverload } = require('./helpers/check.connect')
-// checkOverload()
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 const queryExchangeRate = async () => {
-  const client = await cosmwasm.SigningCosmWasmClient.connect(
-    "https://rpc.orai.io"
-  );
-  const queryResult = await client.queryContractSmart(CONTRACT_ADDR.LSD_HUB_ORAICHAIN, {
-    state: {},
-  });
+  let numberCall = 0;
+  let done = 0;
+  let queryResult = {};
+
+  if (clients.length == 0) {
+    throw ("Cannot connect to RPC")
+  }
+
+  clientIndex = clients.length;
+  while (!done && numberCall < 10) {
+    try {
+      numberCall++;
+      queryResult = await clients[(clientIndex = (clientIndex + 1) % clients.length)].queryContractSmart(CONTRACT_ADDR.LSD_HUB_ORAICHAIN, {
+        state: {},
+      });
+      done = 1;
+    } catch (err) {
+      console.log(err.toString());
+    }
+  }
+  if (numberCall >= 10) {
+    throw "Cannot connect to RPC";
+  }
+
   return Math.round((queryResult.sc_exchange_rate) * CONFIG.DECIMAL_PLACE)
 };
 
@@ -74,12 +96,12 @@ app.get('/signature', async (req, res, next) => {
       timeStamp: getUnixTimeNow(),
       exchangeRate: getExchangeRate
     };
-  
+
     const dataToSign = web3.utils.soliditySha3(
       { type: 'uint256', value: data.timeStamp },
       { type: 'uint256', value: data.exchangeRate },
     );
-  
+
     const { signature } = web3.eth.accounts.sign(dataToSign, PRIVATE_KEY)
 
     let utf8Bytes = ethers.utils.toUtf8Bytes(signature)
@@ -87,13 +109,13 @@ app.get('/signature', async (req, res, next) => {
     console.log({
       inforExchangeRare: data,
       signature,
-      utf8Bytes: uint8ArrayToArray(utf8Bytes)
+      // utf8Bytes: uint8ArrayToArray(utf8Bytes)
     });
-  
+
     return res.status(200).json({
       inforExchangeRare: data,
       signature: signature,
-      utf8Bytes: uint8ArrayToArray(utf8Bytes)
+      // utf8Bytes: uint8ArrayToArray(utf8Bytes)
     })
   } catch (err) {
     console.log(err);
@@ -107,11 +129,11 @@ function uint8ArrayToArray(uint8Array) {
   var array = [];
 
   for (var i = 0; i < uint8Array.byteLength; i++) {
-      array[i] = uint8Array[i];
+    array[i] = uint8Array[i];
   }
 
   return array;
 }
 
-module.exports = {getPassWord, app}
+module.exports = { initApp, app }
 
